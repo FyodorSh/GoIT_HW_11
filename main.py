@@ -20,7 +20,7 @@
 # Перевірку на коректність веденого дня народження setter для value класу Birthday.
 
 from collections import UserDict
-
+from datetime import date
 
 class AddressBook(UserDict):
     def add_record(self, record):
@@ -30,6 +30,24 @@ class AddressBook(UserDict):
 class Field:
     pass
 
+
+class Birthday(Field):
+    def __init__(self, value):
+        self.value = value
+
+    def days_to_birthday(self):
+        birthday = date(year=1983, month=11, day=3)
+        today = date.today()
+        next_birthday = date(year=today.year, month=birthday.month, day=birthday.day)
+        if next_birthday < today:
+            next_birthday = date(year=today.year + 1, month=birthday.month, day=birthday.day)
+
+        delta = next_birthday - today
+
+        if delta.days == 0:
+            print("Today birthday")
+        else:
+            print(f"{delta.days} days to next birthday")
 
 class Name(Field):
     def __init__(self, name):
