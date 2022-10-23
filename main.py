@@ -7,6 +7,15 @@ class AddressBook(UserDict):
     def add_record(self, record):
         self.data[record.name] = record
 
+    def iterator(self, count: int):
+        for key, value in self:
+            i = 1
+            temp_dict = {}
+            while i <= count:
+                temp_dict[key] = value
+                i += 1
+            yield temp_dict
+
     def __iter__(self):
         for key, value in self.data.items():
             yield key, value
@@ -185,8 +194,9 @@ def phone(*args):
 
 @input_error
 def show():
-    for key, data in RECORDS:
-        print(f"""Name: {key.value} {f" - Birthday: {data.birthday.value.strftime('%d-%m-%Y')} ({data.birthday.days_to_birthday()})" if data.birthday.value else ''}\nPhone: {', '.join(phone.value for phone in data.phones)}""")
+    for elem in RECORDS.iterator(10):
+        for key, data in elem.items():
+            print(f"""Name: {key.value} {f" - Birthday: {data.birthday.value.strftime('%d-%m-%Y')} ({data.birthday.days_to_birthday()})" if data.birthday.value else ''}\nPhone: {', '.join(phone.value for phone in data.phones)}""")
 
 
 def stop():
