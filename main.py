@@ -10,11 +10,11 @@
 #
 # Критерії прийому:
 #
-# AddressBook реалізує метод iterator, який повертає генератор за записами AddressBook і за одну ітерацію повертає
-# уявлення для N записів.
-# Клас Record приймає ще один додатковий (опціональний) аргумент класу Birthday
-# Клас Record реалізує метод days_to_birthday, який повертає кількість днів до наступного дня народження контакту,
-# якщо день народження заданий.
+# *AddressBook реалізує метод iterator, який повертає генератор за записами AddressBook і за одну ітерацію повертає
+# *уявлення для N записів.
+# *Клас Record приймає ще один додатковий (опціональний) аргумент класу Birthday
+# *Клас Record реалізує метод days_to_birthday, який повертає кількість днів до наступного дня народження контакту,
+# *якщо день народження заданий.
 # setter та getter логіку для атрибутів value спадкоємців Field.
 # Перевірку на коректність веденого номера телефону setter для value класу Phone.
 # Перевірку на коректність веденого дня народження setter для value класу Birthday.
@@ -24,17 +24,29 @@ from datetime import date
 
 class AddressBook(UserDict):
     def add_record(self, record):
-        self.data[record.name.value] = record
+        self.data[record.name] = record
+
+    def __iter__(self):
+        for key, value in self.data.items():
+            yield key, value
 
 
 class Field:
-    pass
+    def __init__(self, value):
+        self.__value = value
+
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, value):
+        self.__value = value
 
 
 class Birthday(Field):
-    def __init__(self, value):
-        self.value = value
 
+    @property
     def days_to_birthday(self):
         birthday = date(year=1983, month=11, day=3)
         today = date.today()
@@ -45,28 +57,31 @@ class Birthday(Field):
         delta = next_birthday - today
 
         if delta.days == 0:
-            print("Today birthday")
+            return "Today birthday"
         else:
-            print(f"{delta.days} days to next birthday")
+            return f"{delta.days} days to next birthday"
+
 
 class Name(Field):
-    def __init__(self, name):
-        self.value = name
+    pass
 
 
 class Phone(Field):
-    def __init__(self, phone):
-        self.value = phone
+    pass
 
 
 class Record:
 
-    def __init__(self, name, phone=None):
+    def __init__(self, name, phone=None, birthday=None):
         self.name = Name(name)
         if phone:
             self.phones = [Phone(phone)]
         else:
             self.phones = []
+        if birthday:
+            self.birthday = Birthday(birthday)
+        else:
+            self.birthday = None
 
     def add_phone(self, phone):
         self.phones.append(Phone(phone))
@@ -111,13 +126,17 @@ def hello():
 @input_error
 def add(*args):
     command_list = args[0]
-    if not len(command_list) == 2:
+    if len(command_list) < 2:
         print("Give me name and phone please")
         return
+
     contact_name = command_list[0]
     contact_phone = command_list[1]
+    contact_birthday = None
+    if len(command_list) > 2:
+        contact_birthday = command_list[2]
     if not RECORDS.get(contact_name):
-        new_record = Record(contact_name, contact_phone)
+        new_record = Record(contact_name, contact_phone, contact_birthday)
         RECORDS.add_record(new_record)
     else:
         RECORDS[contact_name].add_phone(contact_phone)
@@ -161,8 +180,8 @@ def phone(*args):
 
 @input_error
 def show():
-    for key, data in RECORDS.items():
-        print(f"Name: {key} - Phone: {', '.join(phone.value for phone in data.phones)}")
+    for key, data in RECORDS:
+        print(f"""Name: {key.value} {f" - Birthday: {data.birthday.value}" if data.birthday else ''}\nPhone: {', '.join(phone.value for phone in data.phones)}""")
 
 
 def stop():
