@@ -20,7 +20,9 @@
 # Перевірку на коректність веденого дня народження setter для value класу Birthday.
 
 from collections import UserDict
-from datetime import date
+import datetime
+import re
+
 
 class AddressBook(UserDict):
     def add_record(self, record):
@@ -32,27 +34,25 @@ class AddressBook(UserDict):
 
 
 class Field:
-    def __init__(self, value):
-        self.__value = value
+    def __init__(self, value=None):
+        self._value = value
 
     @property
     def value(self):
-        return self.__value
+        return self._value
 
     @value.setter
     def value(self, value):
-        self.__value = value
+        self._value = value
 
 
 class Birthday(Field):
-
-    @property
     def days_to_birthday(self):
-        birthday = date(year=1983, month=11, day=3)
-        today = date.today()
-        next_birthday = date(year=today.year, month=birthday.month, day=birthday.day)
+        birthday = self._value
+        today = datetime.date.today()
+        next_birthday = datetime.date(year=today.year, month=birthday.month, day=birthday.day)
         if next_birthday < today:
-            next_birthday = date(year=today.year + 1, month=birthday.month, day=birthday.day)
+            next_birthday = datetime.date(year=today.year + 1, month=birthday.month, day=birthday.day)
 
         delta = next_birthday - today
 
@@ -61,27 +61,51 @@ class Birthday(Field):
         else:
             return f"{delta.days} days to next birthday"
 
+    @Field.value.setter
+    def value(self, value):
+        try:
+            super(Birthday, self.__class__).value.fset(self, datetime.datetime.strptime(value, '%d-%m-%Y'))
+        except ValueError:
+            print("Incorrect data format, should be DD-MM-YYYY")
+
 
 class Name(Field):
     pass
 
 
-class Phone(Field):
+class PhoneFormatError(Exception):
     pass
+
+class Phone(Field):
+
+    def __init__(self, value):
+        self.value = Phone.check_phone(value)
+
+    @classmethod
+    def check_phone(cls, value):
+        regex = r"\([0-9]{3}\)[0-9]{3}-[0-9]{2}-[0-9]{2}"
+        if len(re.findall(regex, value)) == 0:
+            raise PhoneFormatError
+        return value
+
+
+    @Field.value.setter
+    def value(self, value):
+        super(Phone, self.__class__).value.fset(self, Phone.check_phone(value))
 
 
 class Record:
 
     def __init__(self, name, phone=None, birthday=None):
         self.name = Name(name)
+        self.birthday = Birthday()
         if phone:
             self.phones = [Phone(phone)]
         else:
             self.phones = []
+
         if birthday:
-            self.birthday = Birthday(birthday)
-        else:
-            self.birthday = None
+            self.birthday.value = birthday
 
     def add_phone(self, phone):
         self.phones.append(Phone(phone))
@@ -114,6 +138,8 @@ def input_error(func):
             print("Wrong command")
         except IndexError:
             print("Wrong command")
+        except PhoneFormatError:
+            print("Incorrect phone format, (NNN)NNN-NN-NN")
     return wrapper
 
 
@@ -181,7 +207,7 @@ def phone(*args):
 @input_error
 def show():
     for key, data in RECORDS:
-        print(f"""Name: {key.value} {f" - Birthday: {data.birthday.value}" if data.birthday else ''}\nPhone: {', '.join(phone.value for phone in data.phones)}""")
+        print(f"""Name: {key.value} {f" - Birthday: {data.birthday.value.strftime('%d-%m-%Y')} ({data.birthday.days_to_birthday()})" if data.birthday.value else ''}\nPhone: {', '.join(phone.value for phone in data.phones)}""")
 
 
 def stop():
